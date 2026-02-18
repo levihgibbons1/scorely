@@ -1,5 +1,14 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { storage } from "../../../server/storage";
+import { createClient } from "@supabase/supabase-js";
+
+function getSupabase() {
+  const url = process.env.SUPABASE_URL ?? "";
+  const key = process.env.SUPABASE_ANON_KEY ?? "";
+  if (!url || !key) {
+    throw new Error("SUPABASE_URL and SUPABASE_ANON_KEY must be set");
+  }
+  return createClient(url, key);
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
@@ -7,12 +16,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const supabase = getSupabase();
     const id = req.query.id as string;
-    const agent = await storage.getAgent(id);
-    if (!agent) {
-      return res.status(404).json({ message: "Agent not found" });
-    }
-    return res.json(agent);
+    const { data, error } = await supabase
+      .from("agents")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) return res.status(404).json({ message: "Agent not found" });
+    return res.json(data);
   } catch (err: any) {
     return res.status(500).json({ message: err.message });
   }

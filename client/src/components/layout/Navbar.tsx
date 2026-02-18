@@ -59,7 +59,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-4">
           <Link href="/submit">
             <Button className="bg-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20">
-              Submit Agent
+              List Your Agent
             </Button>
           </Link>
         </div>
@@ -97,7 +97,7 @@ export default function Navbar() {
                 )}
                 <div className="h-px bg-slate-200 dark:bg-slate-800 my-2" />
                 <Link href="/submit" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full">Submit Agent</Button>
+                  <Button className="w-full">List Your Agent</Button>
                 </Link>
               </div>
             </SheetContent>

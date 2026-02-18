@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Sparkles } from "lucide-react";
@@ -5,6 +7,17 @@ import { motion } from "framer-motion";
 import AnimatedBackground from "@/components/ui/AnimatedBackground";
 
 export default function Hero() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [, setLocation] = useLocation();
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      setLocation(`/discover?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      setLocation("/discover");
+    }
+  };
+
   return (
     <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
       <AnimatedBackground />
@@ -53,16 +66,25 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-lg mx-auto"
         >
-          <div className="relative w-full group">
+          <form
+            className="relative w-full group"
+            onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
+          >
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-            <Input 
-              type="text" 
-              placeholder="Search for 'code reviewer' or 'data analyst'..." 
+            <Input
+              type="text"
+              placeholder="Search for 'code reviewer' or 'data analyst'..."
               className="pl-10 h-12 bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 shadow-sm text-base rounded-lg focus-visible:ring-primary/20 transition-all hover:bg-white dark:hover:bg-white/10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
+          </form>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button size="lg" className="w-full sm:w-auto h-12 px-8 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-lg font-medium shadow-lg shadow-blue-900/5 transition-all">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto h-12 px-8 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-lg font-medium shadow-lg shadow-blue-900/5 transition-all"
+              onClick={handleSearch}
+            >
               Search Agents
             </Button>
           </motion.div>

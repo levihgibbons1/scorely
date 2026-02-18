@@ -1,41 +1,11 @@
+import { Link, useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Star, ArrowUpRight, Zap, Shield, Users, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-
-const TRENDING_AGENTS = [
-  {
-    id: "1",
-    name: "CodePilot",
-    category: "Development",
-    description:
-      "AI-powered code review and refactoring assistant. Analyzes pull requests, suggests improvements, and catches bugs before they reach production.",
-    score: 4.8,
-    upvotes: 1243,
-    badgeColor: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  },
-  {
-    id: "2",
-    name: "DataSense",
-    category: "Analytics",
-    description:
-      "Turn raw data into actionable insights. Connects to your databases, generates reports, and surfaces trends with natural language queries.",
-    score: 4.6,
-    upvotes: 987,
-    badgeColor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-  },
-  {
-    id: "3",
-    name: "ContentForge",
-    category: "Marketing",
-    description:
-      "End-to-end content creation agent. Drafts blog posts, social media copy, and email campaigns tailored to your brand voice and audience.",
-    score: 4.5,
-    upvotes: 862,
-    badgeColor: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-  },
-];
+import { useAgents } from "@/lib/api";
+import { getScore, CATEGORY_COLORS } from "@shared/schema";
 
 const container = {
   hidden: { opacity: 0 },
@@ -57,6 +27,14 @@ const item = {
 } as const;
 
 export default function AgentSearch() {
+  const [, setLocation] = useLocation();
+  const { data: allAgents = [] } = useAgents();
+
+  // Get top 3 agents by upvotes for trending section
+  const trendingAgents = [...allAgents]
+    .sort((a, b) => b.upvotes - a.upvotes)
+    .slice(0, 3);
+
   return (
     <section id="agents" className="py-24 relative z-10">
       <div className="container px-4 mx-auto">
@@ -81,12 +59,14 @@ export default function AgentSearch() {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <Button
-              variant="outline"
-              className="gap-2 hover:bg-white hover:text-primary transition-all"
-            >
-              View All Agents <ArrowUpRight className="w-4 h-4" />
-            </Button>
+            <Link href="/discover">
+              <Button
+                variant="outline"
+                className="gap-2 hover:bg-white hover:text-primary transition-all"
+              >
+                View All Agents <ArrowUpRight className="w-4 h-4" />
+              </Button>
+            </Link>
           </motion.div>
         </div>
 
@@ -98,47 +78,47 @@ export default function AgentSearch() {
           viewport={{ once: true, margin: "-100px" }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {TRENDING_AGENTS.map((agent) => (
-            <motion.div key={agent.id} variants={item}>
-              <Card className="group h-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 transform hover:-translate-y-1">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge variant="secondary" className={agent.badgeColor}>
-                      {agent.category}
-                    </Badge>
-                    <motion.div
-                      whileHover={{ scale: 1.2, rotate: 10 }}
-                      className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 p-1.5 rounded-full cursor-help"
-                      title="Verified Agent"
-                    >
-                      <Shield className="w-3 h-3 fill-current" />
-                    </motion.div>
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">
-                    {agent.name}
-                  </h3>
-                  <div className="flex items-center gap-1 text-amber-500 text-sm font-medium mt-1">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span>{agent.score.toFixed(1)}</span>
-                    <span className="text-slate-400 dark:text-slate-600 font-normal ml-1">
-                      ({agent.upvotes.toLocaleString()} upvotes)
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="pb-6">
-                  <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
-                    {agent.description}
-                  </p>
-                </CardContent>
-                <CardFooter className="pt-0">
-                  <Button className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-primary dark:hover:bg-slate-200 transition-colors group/btn">
-                    View Details
-                    <ArrowUpRight className="w-4 h-4 ml-2 opacity-0 -translate-x-2 group-hover/btn:opacity-100 group-hover/btn:translate-x-0 transition-all" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          ))}
+          {trendingAgents.map((agent) => {
+            const score = getScore(agent);
+            const badgeColor = CATEGORY_COLORS[agent.category] || CATEGORY_COLORS["Other"];
+
+            return (
+              <motion.div key={agent.id} variants={item}>
+                <Card className="group h-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 transform hover:-translate-y-1">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <Badge variant="secondary" className={badgeColor}>
+                        {agent.category}
+                      </Badge>
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">
+                      {agent.name}
+                    </h3>
+                    <div className="flex items-center gap-1 text-amber-500 text-sm font-medium mt-1">
+                      <Star className="w-4 h-4 fill-current" />
+                      <span>{score > 0 ? score.toFixed(1) : "N/A"}</span>
+                      <span className="text-slate-400 dark:text-slate-600 font-normal ml-1">
+                        ({agent.upvotes.toLocaleString()} upvotes)
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pb-6">
+                    <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
+                      {agent.description}
+                    </p>
+                  </CardContent>
+                  <CardFooter className="pt-0">
+                    <Link href={`/agents/${agent.id}`} className="w-full">
+                      <Button className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-primary dark:hover:bg-slate-200 transition-colors group/btn">
+                        View Details
+                        <ArrowUpRight className="w-4 h-4 ml-2 opacity-0 -translate-x-2 group-hover/btn:opacity-100 group-hover/btn:translate-x-0 transition-all" />
+                      </Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            );
+          })}
         </motion.div>
 
         {/* Categories Preview */}
@@ -153,17 +133,17 @@ export default function AgentSearch() {
             { icon: Zap, label: "Productivity", color: "text-amber-500" },
             {
               icon: Users,
-              label: "HR & Recruiting",
+              label: "Research",
               color: "text-blue-500",
             },
             {
               icon: Shield,
-              label: "Legal & Compliance",
+              label: "Development",
               color: "text-indigo-500",
             },
             {
               icon: Sparkles,
-              label: "Creative & Design",
+              label: "Marketing",
               color: "text-purple-500",
             },
           ].map((cat, i) => (
@@ -174,6 +154,7 @@ export default function AgentSearch() {
                 backgroundColor: "rgba(255, 255, 255, 0.2)",
               }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => setLocation(`/discover`)}
               className="flex items-center gap-3 p-4 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-white/10 hover:border-blue-200 dark:hover:border-blue-800 hover:shadow-md transition-all cursor-pointer group"
             >
               <div

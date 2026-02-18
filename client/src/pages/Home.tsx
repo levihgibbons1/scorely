@@ -35,14 +35,14 @@ export default function Home() {
                 with the best AI agents available today.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="#agents">
+                <Link href="/discover">
                   <Button
                     size="lg"
                     className="h-14 px-8 text-lg bg-primary hover:bg-blue-600 text-white shadow-xl shadow-blue-500/20"
                   >
                     Start Exploring Now
                   </Button>
-                </a>
+                </Link>
                 <Link href="/submit">
                   <Button
                     size="lg"

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-18
+
+### Added
+
+- **Discovery Page** — Browse and search AI agents with category pills, trending section, grid/list views, advanced filters (verified, price range), sort options, and empty state
+- **Agent Detail Page (Redesign)** — Rich agent profile with banner header, large icon, verified badge, star ratings, developer info, Try/Upvote/Save buttons, about section, gallery placeholder, community review submission dialog, and sidebar info + developer cards
+- **Reviews Page** — Community reviews feed with star ratings, sort by latest/highest/lowest/most helpful, helpful and reply counts, and Load More pagination
+- **Community Page** — "Coming Soon" placeholder showcasing planned features (Discussions, Showcase, Events) with CTA buttons
+- **Profile Page** — Public user profile with cover photo, avatar, user stats, social links, and tabs for Submissions, Favorites, and Activity
+- **Settings Page** — Account settings with profile management (display name, username, bio), email display, theme toggle (light/dark/system with localStorage persistence), and danger zone (account deletion with confirmation dialog)
+- **Username System** — Username availability checking with debounced Supabase query, visual indicators (spinner/check/X), input sanitization, and 30-day change lockout via `username_changed_at` metadata
+- **Dashboard Analytics** — Daily/weekly/monthly timeframe selector with stats cards (New Agents, Upvotes, Downvotes, Approval Rate), per-agent performance breakdown with progress bars, and analytics summary
+- **404 Page (Redesign)** — Branded 404 page with animated background, large gradient "404" text, glassmorphic overlay, and Return Home / Go Back buttons
+
+### Changed
+
+- **Navbar** — Updated navigation links to Discover, Reviews, Community; kept auth-aware action buttons (Sign In + List Your Agent / Sign Out + Dashboard) with hover animations
+- **Routing** — Added 6 new routes: `/discover`, `/reviews`, `/community`, `/profile/:id?`, `/settings` (protected), plus updated `/agents/:id` to use new design
+- **Popover Fix** — Added missing `--color-popover` and related CSS variable mappings in Tailwind v4 theme config, fixing transparent dropdown menus across all pages
+
 ## [1.1.0] - 2026-02-18
 
 ### Added

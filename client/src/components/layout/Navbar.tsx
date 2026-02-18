@@ -17,9 +17,9 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { name: "Agents", href: "/#agents" },
-    { name: "Features", href: "/#features" },
-    { name: "Submit", href: "/submit" },
+    { name: "Discover", href: "/discover" },
+    { name: "Reviews", href: "/reviews" },
+    { name: "Community", href: "/community" },
   ];
 
   return (
@@ -68,30 +68,38 @@ export default function Navbar() {
           {!loading && !user && (
             <>
               <Link href="/login">
-                <Button variant="ghost" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                  Sign In
-                </Button>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button variant="ghost" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    Sign In
+                  </Button>
+                </motion.div>
               </Link>
               <Link href="/submit">
-                <Button className="bg-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20">
-                  List Your Agent
-                </Button>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button className="bg-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 transition-shadow">
+                    List Your Agent
+                  </Button>
+                </motion.div>
               </Link>
             </>
           )}
           {!loading && user && (
             <>
-              <Button
-                variant="ghost"
-                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white gap-2"
-                onClick={handleSignOut}
-              >
-                <LogOut className="w-4 h-4" /> Sign Out
-              </Button>
-              <Link href="/dashboard">
-                <Button className="bg-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20">
-                  Dashboard
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  variant="ghost"
+                  className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white gap-2"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="w-4 h-4" /> Sign Out
                 </Button>
+              </motion.div>
+              <Link href="/dashboard">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button className="bg-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 transition-shadow">
+                    Dashboard
+                  </Button>
+                </motion.div>
               </Link>
             </>
           )}

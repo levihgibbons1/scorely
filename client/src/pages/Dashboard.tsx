@@ -15,6 +15,10 @@ import {
   TrendingUp,
   PackageOpen,
   Bookmark,
+  Calendar,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
 } from "lucide-react";
 
 import Navbar from "@/components/layout/Navbar";
@@ -45,8 +49,11 @@ import { supabase } from "@/lib/supabase";
 import { getScore } from "@shared/schema";
 import type { Agent } from "@shared/schema";
 
+type Timeframe = "daily" | "weekly" | "monthly";
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("agents");
+  const [analyticsTimeframe, setAnalyticsTimeframe] = useState<Timeframe>("weekly");
   const { user: authUser, signOut } = useAuth();
   const [myAgents, setMyAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +94,32 @@ export default function Dashboard() {
   const avgScore = myAgents.length > 0
     ? Math.round((myAgents.reduce((sum, a) => sum + getScore(a), 0) / myAgents.length) * 10) / 10
     : 0;
+
+  // Analytics: filter agents by timeframe
+  const getTimeframeDate = (tf: Timeframe) => {
+    const now = new Date();
+    if (tf === "daily") return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    if (tf === "weekly") return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // monthly
+  };
+
+  const timeframeLabels: Record<Timeframe, string> = {
+    daily: "today",
+    weekly: "this week",
+    monthly: "this month",
+  };
+
+  const timeframeAgents = myAgents.filter(
+    (a) => new Date(a.created_at) >= getTimeframeDate(analyticsTimeframe)
+  );
+
+  const tfUpvotes = timeframeAgents.reduce((sum, a) => sum + (a.upvotes || 0), 0);
+  const tfDownvotes = timeframeAgents.reduce((sum, a) => sum + (a.downvotes || 0), 0);
+  const tfAvgScore = timeframeAgents.length > 0
+    ? Math.round((timeframeAgents.reduce((sum, a) => sum + getScore(a), 0) / timeframeAgents.length) * 10) / 10
+    : 0;
+  const tfTotalVotes = tfUpvotes + tfDownvotes;
+  const tfVoteRatio = tfTotalVotes > 0 ? Math.round((tfUpvotes / tfTotalVotes) * 100) : 0;
 
   const formatTimeAgo = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -194,6 +227,11 @@ export default function Dashboard() {
                     <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white">Dashboard</h1>
                     <p className="text-slate-600 dark:text-slate-400">Manage your agents and view performance analytics.</p>
                   </div>
+                  <Link href="/settings">
+                    <Button variant="outline" className="bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 hover:bg-white/80 dark:hover:bg-slate-800/80">
+                      <Settings className="w-4 h-4 mr-2" /> Settings
+                    </Button>
+                  </Link>
                 </div>
 
                 <Tabs defaultValue="agents" className="space-y-6" onValueChange={setActiveTab}>
@@ -335,21 +373,190 @@ export default function Dashboard() {
 
                   {/* Analytics Tab */}
                   <TabsContent value="analytics" className="space-y-6">
-                    <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 shadow-lg">
-                      <CardHeader>
-                        <CardTitle>Engagement Overview</CardTitle>
-                        <CardDescription>Views and votes over time.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                          <BarChart3 className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
-                          <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">No analytics data yet</h4>
-                          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
-                            Analytics will appear here once your agents start receiving engagement. Check back soon!
-                          </p>
+                    {/* Timeframe Selector */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-slate-500" />
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Timeframe</span>
+                      </div>
+                      <div className="flex items-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-lg p-1">
+                        {(["daily", "weekly", "monthly"] as Timeframe[]).map((tf) => (
+                          <button
+                            key={tf}
+                            onClick={() => setAnalyticsTimeframe(tf)}
+                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                              analyticsTimeframe === tf
+                                ? "bg-primary text-white shadow-sm"
+                                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5"
+                            }`}
+                          >
+                            {tf.charAt(0).toUpperCase() + tf.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {myAgents.length === 0 ? (
+                      <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 shadow-lg">
+                        <CardContent>
+                          <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <BarChart3 className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
+                            <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">No analytics data yet</h4>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+                              Submit your first agent to start tracking engagement analytics.
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <>
+                        {/* Analytics Stats Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 shadow-sm">
+                            <CardContent className="p-5">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">New Agents</span>
+                                <LayoutGrid className="w-4 h-4 text-blue-500" />
+                              </div>
+                              <div className="text-2xl font-bold text-slate-900 dark:text-white">{timeframeAgents.length}</div>
+                              <p className="text-xs text-slate-500 mt-1">Submitted {timeframeLabels[analyticsTimeframe]}</p>
+                            </CardContent>
+                          </Card>
+
+                          <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 shadow-sm">
+                            <CardContent className="p-5">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Upvotes</span>
+                                <ThumbsUp className="w-4 h-4 text-green-500" />
+                              </div>
+                              <div className="flex items-end gap-2">
+                                <span className="text-2xl font-bold text-slate-900 dark:text-white">{tfUpvotes}</span>
+                                {tfUpvotes > 0 && (
+                                  <span className="flex items-center text-xs font-medium text-green-600 dark:text-green-400 mb-1">
+                                    <ArrowUpRight className="w-3 h-3 mr-0.5" />
+                                    {timeframeLabels[analyticsTimeframe]}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-500 mt-1">{totalUpvotes} total all-time</p>
+                            </CardContent>
+                          </Card>
+
+                          <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 shadow-sm">
+                            <CardContent className="p-5">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Downvotes</span>
+                                <ArrowDownRight className="w-4 h-4 text-red-400" />
+                              </div>
+                              <div className="text-2xl font-bold text-slate-900 dark:text-white">{tfDownvotes}</div>
+                              <p className="text-xs text-slate-500 mt-1">{totalDownvotes} total all-time</p>
+                            </CardContent>
+                          </Card>
+
+                          <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 shadow-sm">
+                            <CardContent className="p-5">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Approval Rate</span>
+                                <TrendingUp className="w-4 h-4 text-purple-500" />
+                              </div>
+                              <div className="flex items-end gap-2">
+                                <span className="text-2xl font-bold text-slate-900 dark:text-white">
+                                  {tfTotalVotes > 0 ? `${tfVoteRatio}%` : "-"}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {tfTotalVotes > 0
+                                  ? `Based on ${tfTotalVotes} vote${tfTotalVotes !== 1 ? "s" : ""}`
+                                  : `No votes ${timeframeLabels[analyticsTimeframe]}`}
+                              </p>
+                            </CardContent>
+                          </Card>
                         </div>
-                      </CardContent>
-                    </Card>
+
+                        {/* Per-Agent Breakdown */}
+                        <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 shadow-lg">
+                          <CardHeader>
+                            <CardTitle className="text-lg">Agent Performance</CardTitle>
+                            <CardDescription>How each of your agents is performing {timeframeLabels[analyticsTimeframe]}.</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {myAgents.map((agent) => {
+                                const score = getScore(agent);
+                                const total = agent.upvotes + agent.downvotes;
+                                const ratio = total > 0 ? Math.round((agent.upvotes / total) * 100) : 0;
+
+                                return (
+                                  <div key={agent.id} className="flex items-center justify-between p-4 rounded-xl bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                        {agent.name.charAt(0)}
+                                      </div>
+                                      <div>
+                                        <h4 className="font-semibold text-sm text-slate-900 dark:text-white">{agent.name}</h4>
+                                        <span className="text-xs text-slate-500">{agent.category}</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-6">
+                                      <div className="hidden sm:flex items-center gap-1">
+                                        <div className="w-24 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                          <div
+                                            className={`h-full rounded-full transition-all ${
+                                              ratio >= 70 ? "bg-green-500" : ratio >= 40 ? "bg-amber-500" : ratio > 0 ? "bg-red-400" : "bg-slate-300 dark:bg-slate-600"
+                                            }`}
+                                            style={{ width: `${total > 0 ? ratio : 0}%` }}
+                                          />
+                                        </div>
+                                        <span className="text-xs text-slate-500 w-10 text-right">{total > 0 ? `${ratio}%` : "-"}</span>
+                                      </div>
+
+                                      <div className="flex items-center gap-4 text-sm">
+                                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                                          <ArrowUpRight className="w-3 h-3" />
+                                          <span className="font-medium">{agent.upvotes}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-red-400">
+                                          <ArrowDownRight className="w-3 h-3" />
+                                          <span className="font-medium">{agent.downvotes}</span>
+                                        </div>
+                                        <span className={`font-bold text-sm ${
+                                          score >= 4 ? "text-green-600" : score >= 2.5 ? "text-amber-500" : score > 0 ? "text-red-500" : "text-slate-400"
+                                        }`}>
+                                          {score || "-"}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Summary Card */}
+                        <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 backdrop-blur-md border-blue-100 dark:border-blue-900/30 shadow-sm">
+                          <CardContent className="p-6">
+                            <div className="flex items-start gap-4">
+                              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                                <BarChart3 className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">Analytics Summary</h4>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                  You have <span className="font-medium text-slate-900 dark:text-white">{myAgents.length}</span> agent{myAgents.length !== 1 ? "s" : ""} with a combined{" "}
+                                  <span className="font-medium text-green-600">{totalUpvotes} upvote{totalUpvotes !== 1 ? "s" : ""}</span> and{" "}
+                                  <span className="font-medium text-slate-900 dark:text-white">{avgScore || "no"}</span> average score.
+                                  {timeframeAgents.length > 0 && (
+                                    <> You submitted <span className="font-medium text-blue-600">{timeframeAgents.length}</span> new agent{timeframeAgents.length !== 1 ? "s" : ""} {timeframeLabels[analyticsTimeframe]}.</>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </>
+                    )}
                   </TabsContent>
 
                   {/* Saved Agents Tab */}

@@ -68,18 +68,18 @@ export default function Home() {
               </span>
             </div>
             <div className="flex gap-8 text-sm text-slate-500 dark:text-slate-400">
-              <a
-                href="#"
+              <Link
+                href="/privacy"
                 className="hover:text-primary transition-colors"
               >
                 Privacy
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link
+                href="/terms"
                 className="hover:text-primary transition-colors"
               >
                 Terms
-              </a>
+              </Link>
             </div>
             <div className="text-sm text-slate-400">
               &copy; {new Date().getFullYear()} Scorely Inc.

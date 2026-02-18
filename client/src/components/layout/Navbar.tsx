@@ -1,12 +1,14 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, User } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { motion } from "framer-motion";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, loading } = useAuth();
 
   const navLinks = [
     { name: "Agents", href: "/#agents" },
@@ -55,8 +57,22 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Actions */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* Desktop Actions */}
+        <div className="hidden md:flex items-center gap-3">
+          {!loading && !user && (
+            <Link href="/login">
+              <Button variant="ghost" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                Log In
+              </Button>
+            </Link>
+          )}
+          {!loading && user && (
+            <Link href="/dashboard">
+              <Button variant="ghost" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white gap-2">
+                <User className="w-4 h-4" /> Dashboard
+              </Button>
+            </Link>
+          )}
           <Link href="/submit">
             <Button className="bg-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20">
               List Your Agent
@@ -96,6 +112,20 @@ export default function Navbar() {
                   )
                 )}
                 <div className="h-px bg-slate-200 dark:bg-slate-800 my-2" />
+                {!loading && !user && (
+                  <Link href="/login" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" className="w-full justify-start">
+                      Log In
+                    </Button>
+                  </Link>
+                )}
+                {!loading && user && (
+                  <Link href="/dashboard" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" className="w-full justify-start gap-2">
+                      <User className="w-4 h-4" /> Dashboard
+                    </Button>
+                  </Link>
+                )}
                 <Link href="/submit" onClick={() => setIsOpen(false)}>
                   <Button className="w-full">List Your Agent</Button>
                 </Link>

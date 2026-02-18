@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-18
+
+### Added
+
+- **Authentication** — Supabase Auth with Google OAuth, GitHub OAuth, and magic link email (passwordless)
+- **Auth Context** — React context provider (`useAuth` hook) managing session state, login, signup, and sign out
+- **Login Page** — Email magic link + Google/GitHub OAuth sign-in with glassmorphism card design
+- **Signup Page** — Full name + email registration with OAuth options, links to Terms and Privacy
+- **Dashboard Page** — Protected route with profile sidebar (avatar, name, email, role, member since), My Agents tab with status badges (Approved/Pending/Rejected), Analytics tab with Recharts area chart, Saved agents tab, and stats cards
+- **Terms of Service Page** — Styled legal page with section icons, scroll area, and full ToS content
+- **Privacy Policy Page** — Styled legal page with section icons, scroll area, and full privacy policy content
+- **Protected Routes** — Dashboard requires authentication, redirects to login if not signed in
+- **Auth-Aware Navbar** — "Log In" button next to "List Your Agent" when logged out, swaps to "Dashboard" when logged in (desktop + mobile)
+- **Footer Links** — Privacy and Terms links in homepage footer now route to actual pages
+
+### Infrastructure
+
+- **Client-Side Supabase Client** — Browser Supabase client using `VITE_` prefixed env vars for auth
+- **Environment Variables** — Added `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for client-side auth
+
 ## [1.0.0] - 2026-02-17
 
 ### Added

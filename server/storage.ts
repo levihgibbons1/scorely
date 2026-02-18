@@ -50,6 +50,7 @@ class SupabaseStorage implements IStorage {
         category: agent.category,
         github_url: agent.github_url || null,
         mcp_endpoint: agent.mcp_endpoint || null,
+        user_id: agent.user_id || null,
       })
       .select()
       .single();

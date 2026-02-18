@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Settings,
@@ -12,20 +12,10 @@ import {
   Trash2,
   Eye,
   ThumbsUp,
-  Clock,
-  CheckCircle2,
-  XCircle,
   TrendingUp,
+  PackageOpen,
+  Bookmark,
 } from "lucide-react";
-import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-} from "recharts";
 
 import Navbar from "@/components/layout/Navbar";
 import AnimatedBackground from "@/components/ui/AnimatedBackground";
@@ -51,73 +41,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-
-// Mock Agents Data
-const myAgents = [
-  {
-    id: 1,
-    name: "CodeWizard Pro",
-    category: "Development",
-    status: "Approved",
-    views: 12405,
-    upvotes: 843,
-    score: 4.9,
-    submitted: "2 days ago",
-  },
-  {
-    id: 2,
-    name: "DataSense",
-    category: "Analytics",
-    status: "Pending",
-    views: 0,
-    upvotes: 0,
-    score: 0,
-    submitted: "Just now",
-  },
-  {
-    id: 3,
-    name: "CopyCraft AI",
-    category: "Marketing",
-    status: "Rejected",
-    views: 45,
-    upvotes: 2,
-    score: 2.1,
-    submitted: "1 week ago",
-  },
-];
-
-// Mock Saved Agents
-const savedAgents = [
-  {
-    id: 101,
-    name: "LegalEagle",
-    category: "Legal",
-    rating: 4.8,
-    reviews: 320,
-  },
-  {
-    id: 102,
-    name: "ResearchMate",
-    category: "Research",
-    rating: 4.9,
-    reviews: 512,
-  },
-];
-
-// Mock Chart Data
-const engagementData = [
-  { name: "Mon", views: 400, votes: 24 },
-  { name: "Tue", views: 300, votes: 13 },
-  { name: "Wed", views: 550, votes: 38 },
-  { name: "Thu", views: 480, votes: 29 },
-  { name: "Fri", views: 690, votes: 48 },
-  { name: "Sat", views: 800, votes: 65 },
-  { name: "Sun", views: 750, votes: 55 },
-];
+import { supabase } from "@/lib/supabase";
+import { getScore } from "@shared/schema";
+import type { Agent } from "@shared/schema";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("agents");
   const { user: authUser, signOut } = useAuth();
+  const [myAgents, setMyAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Derive display user from auth state
   const user = {
@@ -130,22 +62,44 @@ export default function Dashboard() {
     role: "Developer",
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Approved": return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-      case "Pending": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
-      case "Rejected": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-      default: return "bg-slate-100 text-slate-700";
-    }
-  };
+  // Fetch user's submitted agents
+  useEffect(() => {
+    async function fetchMyAgents() {
+      if (!authUser?.id) return;
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("agents")
+        .select("*")
+        .eq("user_id", authUser.id)
+        .order("created_at", { ascending: false });
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Approved": return <CheckCircle2 className="w-3 h-3 mr-1" />;
-      case "Pending": return <Clock className="w-3 h-3 mr-1" />;
-      case "Rejected": return <XCircle className="w-3 h-3 mr-1" />;
-      default: return null;
+      if (!error && data) {
+        setMyAgents(data);
+      }
+      setLoading(false);
     }
+    fetchMyAgents();
+  }, [authUser?.id]);
+
+  // Compute stats from real data
+  const totalUpvotes = myAgents.reduce((sum, a) => sum + (a.upvotes || 0), 0);
+  const totalDownvotes = myAgents.reduce((sum, a) => sum + (a.downvotes || 0), 0);
+  const avgScore = myAgents.length > 0
+    ? Math.round((myAgents.reduce((sum, a) => sum + getScore(a), 0) / myAgents.length) * 10) / 10
+    : 0;
+
+  const formatTimeAgo = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   return (
@@ -240,11 +194,6 @@ export default function Dashboard() {
                     <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white">Dashboard</h1>
                     <p className="text-slate-600 dark:text-slate-400">Manage your agents and view performance analytics.</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-                      <Settings className="w-4 h-4 mr-2" /> Settings
-                    </Button>
-                  </div>
                 </div>
 
                 <Tabs defaultValue="agents" className="space-y-6" onValueChange={setActiveTab}>
@@ -267,13 +216,10 @@ export default function Dashboard() {
                       <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 shadow-sm">
                         <CardContent className="p-6">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Views</span>
-                            <Eye className="w-4 h-4 text-blue-500" />
+                            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Agents</span>
+                            <LayoutGrid className="w-4 h-4 text-blue-500" />
                           </div>
-                          <div className="text-2xl font-bold text-slate-900 dark:text-white">12.5k</div>
-                          <p className="text-xs text-green-500 flex items-center mt-1">
-                            <TrendingUp className="w-3 h-3 mr-1" /> +12% from last week
-                          </p>
+                          <div className="text-2xl font-bold text-slate-900 dark:text-white">{myAgents.length}</div>
                         </CardContent>
                       </Card>
                       <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 shadow-sm">
@@ -282,10 +228,7 @@ export default function Dashboard() {
                             <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Upvotes</span>
                             <ThumbsUp className="w-4 h-4 text-amber-500" />
                           </div>
-                          <div className="text-2xl font-bold text-slate-900 dark:text-white">845</div>
-                          <p className="text-xs text-green-500 flex items-center mt-1">
-                            <TrendingUp className="w-3 h-3 mr-1" /> +5% from last week
-                          </p>
+                          <div className="text-2xl font-bold text-slate-900 dark:text-white">{totalUpvotes}</div>
                         </CardContent>
                       </Card>
                       <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 shadow-sm">
@@ -294,10 +237,12 @@ export default function Dashboard() {
                             <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Avg. Score</span>
                             <TrendingUp className="w-4 h-4 text-purple-500" />
                           </div>
-                          <div className="text-2xl font-bold text-slate-900 dark:text-white">4.8</div>
-                          <p className="text-xs text-slate-500 mt-1">
-                            Based on 3 active agents
-                          </p>
+                          <div className="text-2xl font-bold text-slate-900 dark:text-white">{avgScore || "-"}</div>
+                          {myAgents.length > 0 && (
+                            <p className="text-xs text-slate-500 mt-1">
+                              Based on {myAgents.length} agent{myAgents.length !== 1 ? "s" : ""}
+                            </p>
+                          )}
                         </CardContent>
                       </Card>
                     </div>
@@ -309,71 +254,81 @@ export default function Dashboard() {
                         <CardDescription>Manage and track the status of your submissions.</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-4">
-                          {myAgents.map((agent) => (
-                            <div key={agent.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800 transition-colors gap-4">
-                              <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/20">
-                                  {agent.name.charAt(0)}
-                                </div>
-                                <div>
-                                  <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                    {agent.name}
-                                    <Badge variant="outline" className={`${getStatusColor(agent.status)} border-none`}>
-                                      {getStatusIcon(agent.status)}
-                                      {agent.status}
-                                    </Badge>
-                                  </h4>
-                                  <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                    <span>{agent.category}</span>
-                                    <span>•</span>
-                                    <span>Submitted {agent.submitted}</span>
+                        {loading ? (
+                          <div className="flex items-center justify-center py-12 text-slate-400">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                          </div>
+                        ) : myAgents.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <PackageOpen className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
+                            <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">No agents yet</h4>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-sm">
+                              You haven't submitted any agents. List your first AI agent to see it here.
+                            </p>
+                            <Link href="/submit">
+                              <Button className="bg-primary hover:bg-blue-600 text-white">
+                                <Plus className="w-4 h-4 mr-2" /> Submit Your First Agent
+                              </Button>
+                            </Link>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {myAgents.map((agent) => (
+                              <div key={agent.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800 transition-colors gap-4">
+                                <div className="flex items-start gap-4">
+                                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/20">
+                                    {agent.name.charAt(0)}
                                   </div>
+                                  <div>
+                                    <h4 className="font-bold text-slate-900 dark:text-white">
+                                      {agent.name}
+                                    </h4>
+                                    <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                      <span>{agent.category}</span>
+                                      <span>•</span>
+                                      <span>{formatTimeAgo(agent.created_at)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-6">
+                                  <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-300">
+                                    <div className="flex flex-col items-center">
+                                      <span className="font-bold">{agent.upvotes}</span>
+                                      <span className="text-xs text-slate-400">Upvotes</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                      <span className="font-bold">{agent.downvotes}</span>
+                                      <span className="text-xs text-slate-400">Downvotes</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                      <span className="font-bold text-amber-500">{getScore(agent) || "-"}</span>
+                                      <span className="text-xs text-slate-400">Score</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
+
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreHorizontal className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xl z-50">
+                                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                      <Link href={`/agents/${agent.id}`}>
+                                        <DropdownMenuItem className="cursor-pointer focus:bg-slate-100 dark:focus:bg-slate-800">
+                                          <Eye className="w-4 h-4 mr-2" /> View Public Page
+                                        </DropdownMenuItem>
+                                      </Link>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
                               </div>
-
-                              <div className="flex items-center gap-6">
-                                <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-300">
-                                  <div className="flex flex-col items-center">
-                                    <span className="font-bold">{agent.views.toLocaleString()}</span>
-                                    <span className="text-xs text-slate-400">Views</span>
-                                  </div>
-                                  <div className="flex flex-col items-center">
-                                    <span className="font-bold">{agent.upvotes}</span>
-                                    <span className="text-xs text-slate-400">Upvotes</span>
-                                  </div>
-                                  <div className="flex flex-col items-center">
-                                    <span className="font-bold text-amber-500">{agent.score || "-"}</span>
-                                    <span className="text-xs text-slate-400">Score</span>
-                                  </div>
-                                </div>
-
-                                <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
-
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreHorizontal className="w-4 h-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xl z-50">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem className="cursor-pointer focus:bg-slate-100 dark:focus:bg-slate-800">
-                                      <Edit className="w-4 h-4 mr-2" /> Edit Details
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="cursor-pointer focus:bg-slate-100 dark:focus:bg-slate-800">
-                                      <Eye className="w-4 h-4 mr-2" /> View Public Page
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-red-600 focus:text-red-600 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/20">
-                                      <Trash2 className="w-4 h-4 mr-2" /> Delete Agent
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   </TabsContent>
@@ -383,50 +338,15 @@ export default function Dashboard() {
                     <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 shadow-lg">
                       <CardHeader>
                         <CardTitle>Engagement Overview</CardTitle>
-                        <CardDescription>Views and votes over the last 7 days.</CardDescription>
+                        <CardDescription>Views and votes over time.</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="h-[300px] w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={engagementData}>
-                              <defs>
-                                <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor="#0066FF" stopOpacity={0.3}/>
-                                  <stop offset="95%" stopColor="#0066FF" stopOpacity={0}/>
-                                </linearGradient>
-                              </defs>
-                              <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
-                              <XAxis
-                                dataKey="name"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: 'currentColor', opacity: 0.5 }}
-                                dy={10}
-                              />
-                              <YAxis
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: 'currentColor', opacity: 0.5 }}
-                              />
-                              <Tooltip
-                                contentStyle={{
-                                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                                  backdropFilter: 'blur(8px)',
-                                  border: 'none',
-                                  borderRadius: '8px',
-                                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                }}
-                              />
-                              <Area
-                                type="monotone"
-                                dataKey="views"
-                                stroke="#0066FF"
-                                strokeWidth={2}
-                                fillOpacity={1}
-                                fill="url(#colorViews)"
-                              />
-                            </AreaChart>
-                          </ResponsiveContainer>
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                          <BarChart3 className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
+                          <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">No analytics data yet</h4>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+                            Analytics will appear here once your agents start receiving engagement. Check back soon!
+                          </p>
                         </div>
                       </CardContent>
                     </Card>
@@ -440,28 +360,17 @@ export default function Dashboard() {
                         <CardDescription>Agents you've bookmarked for later.</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {savedAgents.map((agent) => (
-                            <div key={agent.id} className="p-4 rounded-xl bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800 transition-all flex justify-between items-center group">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                                  <Heart className="w-5 h-5 text-red-500 fill-current" />
-                                </div>
-                                <div>
-                                  <h4 className="font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">{agent.name}</h4>
-                                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                                    <span>{agent.category}</span>
-                                    <span className="flex items-center text-amber-500">
-                                      <TrendingUp className="w-3 h-3 mr-0.5" /> {agent.rating}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              <Button variant="ghost" size="sm">
-                                View
-                              </Button>
-                            </div>
-                          ))}
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                          <Bookmark className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
+                          <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">No saved agents yet</h4>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+                            When you bookmark agents you like, they'll show up here for easy access.
+                          </p>
+                          <Link href="/">
+                            <Button variant="outline" className="mt-6">
+                              Browse Agents
+                            </Button>
+                          </Link>
                         </div>
                       </CardContent>
                     </Card>

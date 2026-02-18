@@ -19,6 +19,7 @@ const insertAgentSchema = z.object({
   category: z.enum(CATEGORIES),
   github_url: z.string().url().optional().or(z.literal("")),
   mcp_endpoint: z.string().url().optional().or(z.literal("")),
+  user_id: z.string().optional(),
 });
 
 function getSupabase() {
@@ -71,6 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           category: parsed.data.category,
           github_url: parsed.data.github_url || null,
           mcp_endpoint: parsed.data.mcp_endpoint || null,
+          user_id: parsed.data.user_id || null,
         })
         .select()
         .single();

@@ -12,6 +12,7 @@ export interface Agent {
   downvotes: number;
   avg_rating: number | null;
   total_reviews: number;
+  user_id: string | null;
 }
 
 export const CATEGORIES = [
@@ -44,6 +45,7 @@ export const insertAgentSchema = z.object({
   category: z.enum(CATEGORIES, { message: "Please select a category" }),
   github_url: z.string().url().optional().or(z.literal("")),
   mcp_endpoint: z.string().url().optional().or(z.literal("")),
+  user_id: z.string().optional(),
 });
 
 export type InsertAgent = z.infer<typeof insertAgentSchema>;

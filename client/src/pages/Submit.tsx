@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { useCreateAgent } from "@/lib/api";
 import { CATEGORIES } from "@shared/schema";
 
@@ -61,6 +62,7 @@ const formSchema = z.object({
 export default function Submit() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user: authUser } = useAuth();
   const createAgent = useCreateAgent();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -84,6 +86,7 @@ export default function Submit() {
         category: values.category,
         github_url: values.githubUrl || "",
         mcp_endpoint: values.mcpEndpoint || "",
+        user_id: authUser?.id,
       });
       toast({
         title: "Agent Submitted Successfully!",

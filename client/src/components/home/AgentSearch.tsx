@@ -1,11 +1,41 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Star, ArrowUpRight, Zap, Shield, Users, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-import { useAgents } from "@/lib/api";
-import { getScore, CATEGORY_COLORS } from "@shared/schema";
+
+const TRENDING_AGENTS = [
+  {
+    id: "1",
+    name: "CodePilot",
+    category: "Development",
+    description:
+      "AI-powered code review and refactoring assistant. Analyzes pull requests, suggests improvements, and catches bugs before they reach production.",
+    score: 4.8,
+    upvotes: 1243,
+    badgeColor: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  },
+  {
+    id: "2",
+    name: "DataSense",
+    category: "Analytics",
+    description:
+      "Turn raw data into actionable insights. Connects to your databases, generates reports, and surfaces trends with natural language queries.",
+    score: 4.6,
+    upvotes: 987,
+    badgeColor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+  },
+  {
+    id: "3",
+    name: "ContentForge",
+    category: "Marketing",
+    description:
+      "End-to-end content creation agent. Drafts blog posts, social media copy, and email campaigns tailored to your brand voice and audience.",
+    score: 4.5,
+    upvotes: 862,
+    badgeColor: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+  },
+];
 
 const container = {
   hidden: { opacity: 0 },
@@ -27,13 +57,6 @@ const item = {
 } as const;
 
 export default function AgentSearch() {
-  const { data: allAgents = [], isLoading } = useAgents();
-
-  // Pick top 3 agents by upvotes
-  const agents = [...allAgents]
-    .sort((a, b) => b.upvotes - a.upvotes)
-    .slice(0, 3);
-
   return (
     <section id="agents" className="py-24 relative z-10">
       <div className="container px-4 mx-auto">
@@ -67,91 +90,56 @@ export default function AgentSearch() {
           </motion.div>
         </div>
 
-        {/* Loading state */}
-        {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <Card
-                key={i}
-                className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10"
-              >
+        {/* Agent cards */}
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {TRENDING_AGENTS.map((agent) => (
+            <motion.div key={agent.id} variants={item}>
+              <Card className="group h-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 transform hover:-translate-y-1">
                 <CardHeader className="pb-4">
-                  <Skeleton className="h-5 w-24 mb-2" />
-                  <Skeleton className="h-6 w-40" />
-                  <Skeleton className="h-4 w-32 mt-1" />
+                  <div className="flex items-start justify-between mb-2">
+                    <Badge variant="secondary" className={agent.badgeColor}>
+                      {agent.category}
+                    </Badge>
+                    <motion.div
+                      whileHover={{ scale: 1.2, rotate: 10 }}
+                      className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 p-1.5 rounded-full cursor-help"
+                      title="Verified Agent"
+                    >
+                      <Shield className="w-3 h-3 fill-current" />
+                    </motion.div>
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">
+                    {agent.name}
+                  </h3>
+                  <div className="flex items-center gap-1 text-amber-500 text-sm font-medium mt-1">
+                    <Star className="w-4 h-4 fill-current" />
+                    <span>{agent.score.toFixed(1)}</span>
+                    <span className="text-slate-400 dark:text-slate-600 font-normal ml-1">
+                      ({agent.upvotes.toLocaleString()} upvotes)
+                    </span>
+                  </div>
                 </CardHeader>
                 <CardContent className="pb-6">
-                  <Skeleton className="h-4 w-full mb-2" />
-                  <Skeleton className="h-4 w-3/4" />
+                  <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
+                    {agent.description}
+                  </p>
                 </CardContent>
                 <CardFooter className="pt-0">
-                  <Skeleton className="h-10 w-full" />
+                  <Button className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-primary dark:hover:bg-slate-200 transition-colors group/btn">
+                    View Details
+                    <ArrowUpRight className="w-4 h-4 ml-2 opacity-0 -translate-x-2 group-hover/btn:opacity-100 group-hover/btn:translate-x-0 transition-all" />
+                  </Button>
                 </CardFooter>
               </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Agent cards */}
-        {!isLoading && agents.length > 0 && (
-          <motion.div
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-100px" }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {agents.map((agent) => {
-              const score = getScore(agent);
-              const colorClass =
-                CATEGORY_COLORS[agent.category] || CATEGORY_COLORS.Other;
-
-              return (
-                <motion.div key={agent.id} variants={item}>
-                  <Card className="group h-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/20 dark:border-white/10 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 transform hover:-translate-y-1">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <Badge variant="secondary" className={colorClass}>
-                          {agent.category}
-                        </Badge>
-                        <motion.div
-                          whileHover={{ scale: 1.2, rotate: 10 }}
-                          className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 p-1.5 rounded-full cursor-help"
-                          title="Verified Agent"
-                        >
-                          <Shield className="w-3 h-3 fill-current" />
-                        </motion.div>
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">
-                        {agent.name}
-                      </h3>
-                      <div className="flex items-center gap-1 text-amber-500 text-sm font-medium mt-1">
-                        <Star className="w-4 h-4 fill-current" />
-                        <span>
-                          {score > 0 ? score.toFixed(1) : "N/A"}
-                        </span>
-                        <span className="text-slate-400 dark:text-slate-600 font-normal ml-1">
-                          ({agent.upvotes.toLocaleString()} upvotes)
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pb-6">
-                      <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
-                        {agent.description}
-                      </p>
-                    </CardContent>
-                    <CardFooter className="pt-0">
-                      <Button className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-primary dark:hover:bg-slate-200 transition-colors group/btn">
-                        View Details
-                        <ArrowUpRight className="w-4 h-4 ml-2 opacity-0 -translate-x-2 group-hover/btn:opacity-100 group-hover/btn:translate-x-0 transition-all" />
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        )}
+            </motion.div>
+          ))}
+        </motion.div>
 
         {/* Categories Preview */}
         <motion.div
